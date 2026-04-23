@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>安心滋养 · 饮食行为记录本（专业图表版）</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #fef7e8;
+            font-family: system-ui, 'Segoe UI', 'Noto Sans', 'Helvetica Neue', sans-serif;
+            color: #2e3b2c;
+            padding: 20px 16px 50px;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            color: #3c6b3a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .sub {
+            color: #6c7a5a;
+            background: #faf2e2;
+            display: inline-block;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+        .info-card {
+            background: #fefcf5;
+            border-radius: 32px;
+            padding: 16px 22px;
+            margin-bottom: 28px;
+            border-left: 8px solid #7caf5e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .info-card p {
+            margin: 8px 0;
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+        .score-guide {
+            background: #f8f3e6;
+            border-radius: 24px;
+            padding: 12px 18px;
+            margin: 12px 0 6px;
+            font-size: 0.85rem;
+        }
+        .score-guide table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+        .score-guide th, .score-guide td {
+            border-bottom: 1px solid #e6dcc8;
+            padding: 6px 4px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .score-guide th {
+            background: #ede5d2;
+            border-radius: 16px;
+        }
+        .badge-note {
+            background: #e9f0e2;
+            border-radius: 20px;
+            padding: 6px 12px;
+            display: inline-block;
+            font-size: 0.75rem;
+        }
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .calendar-card {
+            flex: 1.2;
+            min-width: 280px;
+            background: white;
+            border-radius: 40px;
+            padding: 20px 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            border: 1px solid #f0e5cf;
+        }
+        .trend-card {
+            flex: 2;
+            min-width: 280px;
+            background: white;
+            border-radius: 40px;
+            padding: 18px 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            border: 1px solid #f0e5cf;
+        }
+        .section-title {
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-left: 5px solid #7caf5e;
+            padding-left: 12px;
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .month-nav {
+            background: #edf3e8;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .month-year {
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #7d8f6e;
+        }
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+        .day-cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #fefaf2;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid #f0e5cf;
+            position: relative;
+        }
+        .day-cell.has-record {
+            background: #f3f8ec;
+            border-color: #bbd9a2;
+        }
+        .record-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #7caf5e;
+            border-radius: 10px;
+            margin-top: 3px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        .modal-content {
+            background: #fffcf4;
+            max-width: 700px;
+            width: 100%;
+            border-radius: 48px;
+            padding: 20px 24px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 40px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+        }
+        .meal-item {
+            background: #fef7ea;
+            border-radius: 28px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            border: 1px solid #ede0c5;
+        }
+        .meal-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .meal-type-select {
+            background: white;
+            border: 1px solid #e2d5b6;
+            border-radius: 40px;
+            padding: 6px 12px;
+            font-family: inherit;
+        }
+        .remove-meal {
+            background: #ffe2d6;
+            border: none;
+            border-radius: 40px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+        .food-detail-input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 40px;
+            border: 1px solid #e2d5b6;
+            background: white;
+            font-size: 0.9rem;
+            margin-top: 6px;
+        }
+        .add-meal {
+            background: #e2efd8;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 16px;
+            margin: 12px 0;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+        }
+        .score-row {
+            margin: 16px 0;
+        }
+        .score-input-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .btn-save {
+            background: #7caf5e;
+            color: white;
+            border: none;
+            border-radius: 60px;
+            padding: 12px 20px;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 12px;
+            cursor: pointer;
+        }
+        .delete-day {
+            background: #f4e2d4;
+            color: #a65d3a;
+            margin-top: 8px;
+        }
+        .small-btn {
+            background: #efe3ce;
+            border: none;
+            border-radius: 40px;
+            padding: 6px 14px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .export-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #c2b48a;
+            margin-top: 28px;
+        }
+        @media (max-width: 700px) {
+            .calendar-card, .trend-card { flex: 1 1 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1><i class="fas fa-clipboard-list"></i> 饮食行为记录�?</h1>
+        <div class="sub">📅 长期追踪 · 发现饮食与行为的潜在关联 | 安心滋养膳食陪伴�?</div>
+    </div>
+
+    <div class="info-card">
+        <p><i class="fas fa-lightbulb"></i> <strong>记录方法说明</strong>：每日记录孩子吃的每�?餐（食物+大概分量）以及当日最明显的异常行为（如抽动�?�情绪�?�睡眠等）�??<strong>持续记录1~2个月</strong>，结合趋势图与�?�回�?-�?发�?�试验，可帮助定位可疑食物�??</p>
+        <p><i class="fas fa-shield-alt"></i> <strong>安全提示</strong>：若孩子曾出现呼吸困难�?�喉头水肿�?�昏厥等严重过敏反应，请勿自行激发，务必在医生指导下进行�?</p>
+        <div class="score-guide">
+            <i class="fas fa-chart-simple"></i> <strong>行为综合评分标准�?1-10分）</strong><br>
+            <small>参�?��?�回�?-�?发�?�试验中行为症状的严重程度，请根据孩子当日最突出的表现打分：</small>
+            <table>
+                <tr><th>评分</th><th>行为表现参�??</th></tr>
+                <tr><td>1-3�?</td><td>严重：频繁且剧烈的抽�?/眨眼/发声；整日情绪失控；睡眠严重中断；拒绝进食或呕吐；出现自伤或攻击行为�?</td></tr>
+                <tr><td>4-6�?</td><td>中度：明显异常行为（如眨眼每分钟5次以上），情绪烦躁易怒，入睡困难，或出现腹泻/腹痛/湿疹加重�?</td></tr>
+                <tr><td>7-8�?</td><td>轻度：偶有眨�?/抽动，不影响日常活动；情绪稍不稳定但可安抚；睡眠稍有扰动�?</td></tr>
+                <tr><td>9-10�?</td><td>平稳：几乎无异常行为，情绪良好，饮食睡眠正常，与健康状�?�无异�??</td></tr>
+            </table>
+            <div class="badge-note">�? 评分建议结合症状频率、强度及对生活的影响综合判断。记录越详细，趋势越准确�?</div>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="calendar-card">
+            <div class="section-title"><i class="fas fa-calendar-alt"></i> 记录日历</div>
+            <div class="calendar-header">
+                <button class="month-nav" id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button>
+                <span class="month-year" id="monthYearDisplay"></span>
+                <button class="month-nav" id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="weekdays"><span>�?</span><span>�?</span><span>�?</span><span>�?</span><span>�?</span><span>�?</span><span>�?</span></div>
+            <div id="calendarDays" class="calendar-days"></div>
+            <div class="export-buttons">
+                <button class="small-btn" id="exportDataBtn"><i class="fas fa-download"></i> 导出备份</button>
+                <button class="small-btn" id="importDataBtn"><i class="fas fa-upload"></i> 导入备份</button>
+                <input type="file" id="importFileInput" accept=".json" style="display:none">
+            </div>
+        </div>
+        <div class="trend-card">
+            <div class="section-title"><i class="fas fa-chart-line"></i> 行为评分趋势（最�?30天）</div>
+            <canvas id="behaviorChart" class="trend-canvas"></canvas>
+            <p class="small-note" style="font-size:0.7rem; color:#8f9e7a; margin-top:12px;">�? 点击日历格子可记录每日饮食与行为详情，数据仅存储在您的浏览器中�??</p>
+        </div>
+    </div>
+</div>
+
+<div id="recordModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span id="modalDateTitle">📅 日期</span>
+            <button class="close-modal" id="closeModalBtn">&times;</button>
+        </div>
+        <div id="mealsContainer"></div>
+        <button class="add-meal" id="addMealBtn"><i class="fas fa-plus-circle"></i> 添加餐次/加餐</button>
+        <div class="score-row">
+            <label><i class="fas fa-star"></i> 当日行为综合评分 (1-10�?): </label>
+            <div class="score-input-group">
+                <input type="number" id="overallScore" min="1" max="10" step="1" value="5" style="width:100px">
+                <span class="badge-note">参�?�上方评分标�?</span>
+            </div>
+        </div>
+        <div class="score-row">
+            <label><i class="fas fa-pen"></i> 备注/特殊事件:</label>
+            <textarea id="dailyNotes" rows="2" placeholder="例如：今日外出�?�疫苗接种�?�睡眠不佳等"></textarea>
+        </div>
+        <button class="btn-save" id="saveRecordBtn">💾 保存当日记录</button>
+        <button class="btn-save delete-day" id="deleteDayBtn">🗑�? 删除当日全部记录</button>
+    </div>
+</div>
+<footer>🔍 长期记录更精�? · 每日记录饮食与行为评分，趋势图自动生�? | 基于回避-�?发试验原理辅助评�?</footer>
+
+<script>
+    const STORAGE_KEY = "NourishDietRecordsV2";
+    let records = {};
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth();
+    let chartInstance = null;
+    let currentEditDate = "";
+
+    function migrateOldFormat(data) {
+        let newData = {};
+        for (let date in data) {
+            let day = data[date];
+            let newMeals = [];
+            if (day.meals && Array.isArray(day.meals)) {
+                for (let meal of day.meals) {
+                    let foodDetail = "";
+                    if (meal.foodDetail) {
+                        foodDetail = meal.foodDetail;
+                    } else if (meal.food) {
+                        foodDetail = meal.food;
+                        if (meal.amount) foodDetail += " " + meal.amount;
+                    } else if (meal.amount) {
+                        foodDetail = meal.amount;
+                    }
+                    newMeals.push({
+                        mealType: meal.mealType || "加餐",
+                        foodDetail: foodDetail.trim()
+                    });
+                }
+            }
+            newData[date] = {
+                meals: newMeals,
+                overallScore: day.overallScore !== undefined ? day.overallScore : 5,
+                notes: day.notes || ""
+            };
+        }
+        return newData;
+    }
+
+    function loadRecords() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            let raw = JSON.parse(stored);
+            records = migrateOldFormat(raw);
+        } else {
+            records = {
+                "2026-04-22": {
+                    meals: [{ mealType: "早餐", foodDetail: "白米�?+土豆�? 小半�?" }, { mealType: "午餐", foodDetail: "米饭+西兰�?+鸡肉 适量" }],
+                    overallScore: 6,
+                    notes: "下午有轻微抽�?"
+                },
+                "2026-04-21": {
+                    meals: [{ mealType: "早餐", foodDetail: "小米�? 1�?" }],
+                    overallScore: 8,
+                    notes: ""
+                }
+            };
+        }
+        renderCalendar();
+        updateChart();
+    }
+
+    function saveRecords() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        renderCalendar();
+        updateChart();
+    }
+
+    function hasRecord(dateStr) { return !!records[dateStr]; }
+    function getScoreForDate(dateStr) { return records[dateStr] ? records[dateStr].overallScore : null; }
+
+    function renderCalendar() {
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        let startWeekday = firstDay.getDay();
+        let offset = startWeekday === 0 ? 6 : startWeekday - 1;
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const monthNames = ['1�?','2�?','3�?','4�?','5�?','6�?','7�?','8�?','9�?','10�?','11�?','12�?'];
+        document.getElementById('monthYearDisplay').innerText = `${currentYear}�? ${monthNames[currentMonth]}`;
+        const container = document.getElementById('calendarDays');
+        container.innerHTML = '';
+        for(let i=0;i<offset;i++) { let empty = document.createElement('div'); empty.className = 'day-cell empty'; container.appendChild(empty); }
+        for(let d=1; d<=daysInMonth; d++) {
+            let dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            let cell = document.createElement('div');
+            cell.className = 'day-cell';
+            if(hasRecord(dateStr)) cell.classList.add('has-record');
+            let numSpan = document.createElement('div'); numSpan.className = 'day-number'; numSpan.innerText = d; cell.appendChild(numSpan);
+            if(hasRecord(dateStr)) { let dot = document.createElement('div'); dot.className = 'record-dot'; cell.appendChild(dot); }
+            cell.addEventListener('click', (function(ds){ return function(){ openModal(ds); }; })(dateStr));
+            container.appendChild(cell);
+        }
+        let totalCells = Math.ceil((offset + daysInMonth)/7)*7;
+        let remaining = totalCells - (offset+daysInMonth);
+        for(let i=0;i<remaining;i++) { let empty = document.createElement('div'); empty.className = 'day-cell empty'; container.appendChild(empty); }
+    }
+
+    function openModal(dateStr) {
+        currentEditDate = dateStr;
+        document.getElementById('modalDateTitle').innerHTML = `📅 ${dateStr}`;
+        let record = records[dateStr] || { meals: [], overallScore: 5, notes: "" };
+        const mealsContainer = document.getElementById('mealsContainer');
+        mealsContainer.innerHTML = '';
+        if (record.meals && record.meals.length) { record.meals.forEach(meal => addMealRow(meal.mealType, meal.foodDetail)); }
+        else { addMealRow('早餐', ''); }
+        document.getElementById('overallScore').value = record.overallScore !== undefined ? record.overallScore : 5;
+        document.getElementById('dailyNotes').value = record.notes || '';
+        document.getElementById('recordModal').style.display = 'flex';
+    }
+
+    function addMealRow(mealType = '早餐', foodDetail = '') {
+        const container = document.getElementById('mealsContainer');
+        const mealDiv = document.createElement('div');
+        mealDiv.className = 'meal-item';
+        mealDiv.innerHTML = `
+            <div class="meal-header">
+                <select class="meal-type-select">
+                    <option value="早餐" ${mealType==='早餐'?'selected':''}>早餐</option>
+                    <option value="午餐" ${mealType==='午餐'?'selected':''}>午餐</option>
+                    <option value="晚餐" ${mealType==='晚餐'?'selected':''}>晚餐</option>
+                    <option value="加餐" ${mealType==='加餐'?'selected':''}>加餐</option>
+                    <option value="睡前加餐" ${mealType==='睡前加餐'?'selected':''}>睡前加餐</option>
+                </select>
+                <button class="remove-meal" type="button">�? 移除</button>
+            </div>
+            <input class="food-detail-input" type="text" placeholder="食物及分量（例：白米�? 小半碗；西兰花炒鸡肉 �?50g�?" value="${escapeHtml(foodDetail)}">
+        `;
+        mealDiv.querySelector('.remove-meal').addEventListener('click', () => mealDiv.remove());
+        container.appendChild(mealDiv);
+    }
+
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    function saveCurrentRecord() {
+        const meals = [];
+        const mealItems = document.querySelectorAll('#mealsContainer .meal-item');
+        mealItems.forEach(item => {
+            const mealType = item.querySelector('.meal-type-select').value;
+            const foodDetail = item.querySelector('.food-detail-input').value;
+            if (foodDetail.trim() !== "") { meals.push({ mealType, foodDetail: foodDetail.trim() }); }
+        });
+        const overallScore = parseInt(document.getElementById('overallScore').value);
+        const notes = document.getElementById('dailyNotes').value;
+        records[currentEditDate] = {
+            meals: meals,
+            overallScore: isNaN(overallScore) ? 5 : Math.min(10, Math.max(1, overallScore)),
+            notes: notes
+        };
+        saveRecords();
+        closeModal();
+    }
+
+    function deleteCurrentDay() { if (records[currentEditDate]) { delete records[currentEditDate]; saveRecords(); } closeModal(); }
+    function closeModal() { document.getElementById('recordModal').style.display = 'none'; }
+
+    // 专业图表配置
+    function updateChart() {
+        const ctx = document.getElementById('behaviorChart').getContext('2d');
+        let dates = [];
+        let scores = [];
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        for(let i=29; i>=0; i--) {
+            let d = new Date(today);
+            d.setDate(today.getDate() - i);
+            let dateStr = d.toISOString().slice(0,10);
+            dates.push(dateStr.slice(5));
+            let score = getScoreForDate(dateStr);
+            scores.push(score !== null ? score : null);
+        }
+        if(chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: '行为综合评分 (1-10)',
+                    data: scores,
+                    borderColor: '#7caf5e',
+                    backgroundColor: function(context) {
+                        const chart = context.chart;
+                        const {ctx, chartArea} = chart;
+                        if (!chartArea) return null;
+                        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                        gradient.addColorStop(0, 'rgba(124,175,94,0.05)');
+                        gradient.addColorStop(1, 'rgba(124,175,94,0.3)');
+                        return gradient;
+                    },
+                    borderWidth: 3,
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#5e8a46',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointShadowBlur: 8,
+                    pointShadowColor: 'rgba(0,0,0,0.2)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    tooltip: {
+                        backgroundColor: '#2e3b2c',
+                        titleColor: '#fef7e8',
+                        bodyColor: '#e2efd8',
+                        borderColor: '#7caf5e',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: (ctx) => `评分: ${ctx.raw} 分`,
+                            afterBody: (tooltipItems) => {
+                                if (tooltipItems[0].raw >= 9) return '🎉 状�?�平�?';
+                                if (tooltipItems[0].raw >= 7) return '🌿 轻度波动';
+                                if (tooltipItems[0].raw >= 4) return '⚠️ 中度异常';
+                                return '�? 严重异常，建议关�?';
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: { boxWidth: 12, font: { size: 12, weight: 'bold' }, color: '#3c6b3a' }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 1, max: 10,
+                        title: { display: true, text: '行为评分', font: { weight: 'bold', size: 12 }, color: '#6c7a5a' },
+                        grid: { color: '#e9e0cf', lineWidth: 0.8, drawBorder: true },
+                        ticks: { stepSize: 1, callback: (val) => val + '�?', color: '#5e6b4e' }
+                    },
+                    x: {
+                        title: { display: true, text: '日期 (�?-�?)', font: { weight: 'bold', size: 12 }, color: '#6c7a5a' },
+                        grid: { display: false },
+                        ticks: { maxRotation: 45, autoSkip: true, color: '#7b8a64' }
+                    }
+                },
+                elements: {
+                    line: { borderJoin: 'round' },
+                    point: { hoverBorderWidth: 3 }
+                },
+                layout: {
+                    padding: { top: 16, bottom: 8, left: 8, right: 8 }
+                },
+                interaction: { mode: 'index', intersect: false }
+            }
+        });
+    }
+
+    function exportData() {
+        const dataStr = JSON.stringify(records, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `diet_record_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importData(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                let imported = JSON.parse(e.target.result);
+                imported = migrateOldFormat(imported);
+                records = imported;
+                saveRecords();
+                alert('导入成功！数据已合并替换当前记录�?');
+                renderCalendar();
+                updateChart();
+            } catch(err) { alert('文件格式错误，请导入正确的JSON备份'); }
+        };
+        reader.readAsText(file);
+    }
+
+    document.getElementById('prevMonthBtn').addEventListener('click', () => { if(currentMonth === 0) { currentMonth = 11; currentYear--; } else currentMonth--; renderCalendar(); });
+    document.getElementById('nextMonthBtn').addEventListener('click', () => { if(currentMonth === 11) { currentMonth = 0; currentYear++; } else currentMonth++; renderCalendar(); });
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('saveRecordBtn').addEventListener('click', saveCurrentRecord);
+    document.getElementById('deleteDayBtn').addEventListener('click', deleteCurrentDay);
+    document.getElementById('addMealBtn').addEventListener('click', () => addMealRow('加餐', ''));
+    document.getElementById('exportDataBtn').addEventListener('click', exportData);
+    const importBtn = document.getElementById('importDataBtn');
+    const fileInput = document.getElementById('importFileInput');
+    importBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => { if(e.target.files.length) importData(e.target.files[0]); fileInput.value = ''; });
+    window.onclick = function(e) { const modal = document.getElementById('recordModal'); if(e.target === modal) closeModal(); };
+    loadRecords();
+</script>
+</body>
+</html>
